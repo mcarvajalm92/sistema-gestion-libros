@@ -4,7 +4,18 @@ import (
 	"bufio"
 	"fmt"
 	"os"
+	"strings"
 )
+
+type Libro struct {
+	ID     int
+	Titulo string
+	Autor  string
+	Estado string
+}
+
+var libros []Libro
+var contador = 1
 
 func main() {
 	lector := bufio.NewReader(os.Stdin)
@@ -18,13 +29,13 @@ func main() {
 		fmt.Print("Opción: ")
 
 		opcion, _ := lector.ReadString('\n')
-		opcion = string(opcion[0])
+		opcion = strings.TrimSpace(opcion)
 
 		switch opcion {
 		case "1":
-			fmt.Println("Función Agregar - en construcción")
+			agregar(lector)
 		case "2":
-			fmt.Println("Función Listar - en construcción")
+			listar()
 		case "3":
 			fmt.Println("Función Buscar - en construcción")
 		case "4":
@@ -37,5 +48,25 @@ func main() {
 		default:
 			fmt.Println("Opción no válida")
 		}
+	}
+}
+
+func agregar(lector *bufio.Reader) {
+	fmt.Print("Título: ")
+	titulo, _ := lector.ReadString('\n')
+	fmt.Print("Autor: ")
+	autor, _ := lector.ReadString('\n')
+	libros = append(libros, Libro{contador, strings.TrimSpace(titulo), strings.TrimSpace(autor), "Disponible"})
+	fmt.Println("Agregado ID:", contador)
+	contador++
+}
+
+func listar() {
+	if len(libros) == 0 {
+		fmt.Println("No hay libros")
+		return
+	}
+	for _, l := range libros {
+		fmt.Printf("%d | %s | %s | %s\n", l.ID, l.Titulo, l.Autor, l.Estado)
 	}
 }
