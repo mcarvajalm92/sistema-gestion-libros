@@ -4,6 +4,7 @@ import (
 	"bufio"
 	"fmt"
 	"os"
+	"strconv"
 	"strings"
 )
 
@@ -39,7 +40,7 @@ func main() {
 		case "3":
 			buscar(lector)
 		case "4":
-			fmt.Println("Función Cambiar Estado - en construcción")
+			cambiarEstado(lector)
 		case "5":
 			fmt.Println("Función Eliminar - en construcción")
 		case "6":
@@ -80,4 +81,22 @@ func buscar(lector *bufio.Reader) {
 			fmt.Printf("%d | %s | %s | %s\n", l.ID, l.Titulo, l.Autor, l.Estado)
 		}
 	}
+}
+
+func cambiarEstado(lector *bufio.Reader) {
+	fmt.Print("ID: ")
+	idStr, _ := lector.ReadString('\n')
+	id, _ := strconv.Atoi(strings.TrimSpace(idStr))
+	for i, l := range libros {
+		if l.ID == id {
+			if l.Estado == "Disponible" {
+				libros[i].Estado = "Prestado"
+			} else {
+				libros[i].Estado = "Disponible"
+			}
+			fmt.Println("Estado actualizado")
+			return
+		}
+	}
+	fmt.Println("No encontrado")
 }
