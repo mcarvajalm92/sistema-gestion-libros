@@ -37,7 +37,7 @@ func main() {
 		case "2":
 			listar()
 		case "3":
-			fmt.Println("Función Buscar - en construcción")
+			buscar(lector)
 		case "4":
 			fmt.Println("Función Cambiar Estado - en construcción")
 		case "5":
@@ -68,5 +68,16 @@ func listar() {
 	}
 	for _, l := range libros {
 		fmt.Printf("%d | %s | %s | %s\n", l.ID, l.Titulo, l.Autor, l.Estado)
+	}
+}
+
+func buscar(lector *bufio.Reader) {
+	fmt.Print("Buscar: ")
+	texto, _ := lector.ReadString('\n')
+	texto = strings.TrimSpace(strings.ToLower(texto))
+	for _, l := range libros {
+		if strings.Contains(strings.ToLower(l.Titulo), texto) || strings.Contains(strings.ToLower(l.Autor), texto) {
+			fmt.Printf("%d | %s | %s | %s\n", l.ID, l.Titulo, l.Autor, l.Estado)
+		}
 	}
 }
