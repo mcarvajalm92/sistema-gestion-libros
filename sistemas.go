@@ -42,7 +42,7 @@ func main() {
 		case "4":
 			cambiarEstado(lector)
 		case "5":
-			fmt.Println("Función Eliminar - en construcción")
+			eliminar(lector)
 		case "6":
 			fmt.Println("Adiós")
 			return
@@ -95,6 +95,20 @@ func cambiarEstado(lector *bufio.Reader) {
 				libros[i].Estado = "Disponible"
 			}
 			fmt.Println("Estado actualizado")
+			return
+		}
+	}
+	fmt.Println("No encontrado")
+}
+
+func eliminar(lector *bufio.Reader) {
+	fmt.Print("ID: ")
+	idStr, _ := lector.ReadString('\n')
+	id, _ := strconv.Atoi(strings.TrimSpace(idStr))
+	for i, l := range libros {
+		if l.ID == id {
+			libros = append(libros[:i], libros[i+1:]...)
+			fmt.Println("Eliminado")
 			return
 		}
 	}
