@@ -8,15 +8,28 @@ import (
 	"strings"
 )
 
+// ============================================================
+// CLASE (STRUCT) - DEFINICIÓN ÚNICA
+// ============================================================
+
+// Libro representa un libro en la biblioteca
 type Libro struct {
 	ID     int
 	Titulo string
 	Autor  string
-	Estado string
+	Estado string // "Disponible" o "Prestado"
 }
+
+// ============================================================
+// VARIABLES GLOBALES (por ahora)
+// ============================================================
 
 var libros []Libro
 var contador = 1
+
+// ============================================================
+// FUNCIONES DEL SISTEMA (aún no son métodos)
+// ============================================================
 
 func main() {
 	lector := bufio.NewReader(os.Stdin)
