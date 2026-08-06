@@ -9,9 +9,71 @@ import (
 )
 
 // ============================================================
-// CLASE LIBRO (CON ENCAPSULACIÓN)
+// 1. DEFINICIÓN DE ERRORES PERSONALIZADOS
 // ============================================================
 
+// ErrLibroNoEncontrado se usa cuando un libro no existe en la biblioteca
+type ErrLibroNoEncontrado struct {
+	ID int
+}
+
+func (e ErrLibroNoEncontrado) Error() string {
+	return fmt.Sprintf("libro con ID %d no encontrado", e.ID)
+}
+
+// ErrUsuarioNoEncontrado se usa cuando un usuario no existe
+type ErrUsuarioNoEncontrado struct {
+	ID int
+}
+
+func (e ErrUsuarioNoEncontrado) Error() string {
+	return fmt.Sprintf("usuario con ID %d no encontrado", e.ID)
+}
+
+// ErrLibroYaPrestado se usa cuando se intenta prestar un libro ya prestado
+type ErrLibroYaPrestado struct {
+	Titulo string
+}
+
+func (e ErrLibroYaPrestado) Error() string {
+	return fmt.Sprintf("el libro '%s' ya está prestado", e.Titulo)
+}
+
+// ErrLibroNoPrestado se usa cuando se intenta devolver un libro que no está prestado
+type ErrLibroNoPrestado struct {
+	Titulo string
+}
+
+func (e ErrLibroNoPrestado) Error() string {
+	return fmt.Sprintf("el libro '%s' no está prestado", e.Titulo)
+}
+
+// ErrUsuarioNoTienePrestamo se usa cuando un usuario intenta devolver un libro que no tiene prestado
+type ErrUsuarioNoTienePrestamo struct {
+	UsuarioID int
+	LibroID   int
+}
+
+func (e ErrUsuarioNoTienePrestamo) Error() string {
+	return fmt.Sprintf("el usuario con ID %d no tiene prestado el libro con ID %d", e.UsuarioID, e.LibroID)
+}
+
+// ============================================================
+// 2. INTERFAZ PRESTABLE
+// ============================================================
+
+// Prestable define el contrato para objetos que pueden ser prestados y devueltos
+type Prestable interface {
+	Prestar() error
+	Devolver() error
+	GetTitulo() string
+}
+
+// ============================================================
+// 3. CLASE LIBRO (CON ENCAPSULACIÓN E IMPLEMENTACIÓN DE PRESTABLE)
+// ============================================================
+
+// Libro representa un libro en la biblioteca
 type Libro struct {
 	id     int
 	titulo string
@@ -19,7 +81,7 @@ type Libro struct {
 	estado string // "disponible" o "prestado"
 }
 
-// Constructores y métodos getter
+// NewLibro es el constructor de Libro
 func NewLibro(titulo, autor string) *Libro {
 	return &Libro{
 		id:     0,
@@ -29,6 +91,7 @@ func NewLibro(titulo, autor string) *Libro {
 	}
 }
 
+// Métodos getter y setter (encapsulación)
 func (l *Libro) GetID() int {
 	return l.id
 }
@@ -53,16 +116,35 @@ func (l *Libro) SetID(id int) {
 	l.id = id
 }
 
+// Implementación de la interfaz Prestable
+func (l *Libro) Prestar() error {
+	if l.estado == "prestado" {
+		return ErrLibroYaPrestado{Titulo: l.titulo}
+	}
+	l.estado = "prestado"
+	return nil
+}
+
+func (l *Libro) Devolver() error {
+	if l.estado == "disponible" {
+		return ErrLibroNoPrestado{Titulo: l.titulo}
+	}
+	l.estado = "disponible"
+	return nil
+}
+
 // ============================================================
-// CLASE USUARIO
+// 4. CLASE USUARIO
 // ============================================================
 
+// Usuario representa una persona que puede tomar prestado libros
 type Usuario struct {
 	id        int
 	nombre    string
 	prestamos []int // IDs de libros prestados
 }
 
+// NewUsuario es el constructor de Usuario
 func NewUsuario(nombre string) *Usuario {
 	return &Usuario{
 		id:        0,
@@ -71,6 +153,7 @@ func NewUsuario(nombre string) *Usuario {
 	}
 }
 
+// Métodos getter y setter (encapsulación)
 func (u *Usuario) GetID() int {
 	return u.id
 }
@@ -87,10 +170,13 @@ func (u *Usuario) SetID(id int) {
 	u.id = id
 }
 
+// AgregarPrestamo añade un libro a la lista de préstamos del usuario
 func (u *Usuario) AgregarPrestamo(libroID int) {
 	u.prestamos = append(u.prestamos, libroID)
 }
 
+// RemoverPrestamo elimina un libro de la lista de préstamos del usuario
+// Retorna true si el libro estaba en la lista, false en caso contrario
 func (u *Usuario) RemoverPrestamo(libroID int) bool {
 	for i, id := range u.prestamos {
 		if id == libroID {
@@ -102,9 +188,10 @@ func (u *Usuario) RemoverPrestamo(libroID int) bool {
 }
 
 // ============================================================
-// CLASE BIBLIOTECA (GESTOR CENTRAL)
+// 5. CLASE BIBLIOTECA (GESTOR CENTRAL)
 // ============================================================
 
+// Biblioteca gestiona el catálogo de libros y usuarios
 type Biblioteca struct {
 	libros           []*Libro
 	usuarios         []*Usuario
@@ -112,6 +199,7 @@ type Biblioteca struct {
 	contadorUsuarios int
 }
 
+// NewBiblioteca es el constructor de Biblioteca
 func NewBiblioteca() *Biblioteca {
 	return &Biblioteca{
 		libros:           []*Libro{},
@@ -123,6 +211,7 @@ func NewBiblioteca() *Biblioteca {
 
 // ---------- MÉTODOS DE LIBROS ----------
 
+// AgregarLibro agrega un nuevo libro al catálogo y retorna su ID
 func (b *Biblioteca) AgregarLibro(titulo, autor string) int {
 	libro := NewLibro(titulo, autor)
 	libro.SetID(b.contadorLibros)
@@ -131,6 +220,7 @@ func (b *Biblioteca) AgregarLibro(titulo, autor string) int {
 	return libro.GetID()
 }
 
+// ListarLibros muestra todos los libros en formato tabla
 func (b *Biblioteca) ListarLibros() {
 	if len(b.libros) == 0 {
 		fmt.Println("📭 No hay libros en la biblioteca.")
@@ -143,6 +233,7 @@ func (b *Biblioteca) ListarLibros() {
 	}
 }
 
+// BuscarLibros retorna una lista de libros que coinciden con el texto (título o autor)
 func (b *Biblioteca) BuscarLibros(texto string) []*Libro {
 	resultados := []*Libro{}
 	texto = strings.ToLower(texto)
@@ -154,6 +245,7 @@ func (b *Biblioteca) BuscarLibros(texto string) []*Libro {
 	return resultados
 }
 
+// CambiarEstado cambia el estado de un libro (disponible <-> prestado)
 func (b *Biblioteca) CambiarEstado(id int) error {
 	for _, l := range b.libros {
 		if l.GetID() == id {
@@ -165,23 +257,25 @@ func (b *Biblioteca) CambiarEstado(id int) error {
 			return nil
 		}
 	}
-	return fmt.Errorf("libro con ID %d no encontrado", id)
+	return ErrLibroNoEncontrado{ID: id}
 }
 
+// EliminarLibro elimina un libro por ID
 func (b *Biblioteca) EliminarLibro(id int) error {
 	for i, l := range b.libros {
 		if l.GetID() == id {
 			// Si está prestado, no se puede eliminar
 			if l.GetEstado() == "prestado" {
-				return fmt.Errorf("el libro '%s' está prestado y no se puede eliminar", l.GetTitulo())
+				return ErrLibroYaPrestado{Titulo: l.GetTitulo()}
 			}
 			b.libros = append(b.libros[:i], b.libros[i+1:]...)
 			return nil
 		}
 	}
-	return fmt.Errorf("libro con ID %d no encontrado", id)
+	return ErrLibroNoEncontrado{ID: id}
 }
 
+// ObtenerLibroPorID retorna el libro con el ID dado, o nil si no existe
 func (b *Biblioteca) ObtenerLibroPorID(id int) *Libro {
 	for _, l := range b.libros {
 		if l.GetID() == id {
@@ -193,6 +287,7 @@ func (b *Biblioteca) ObtenerLibroPorID(id int) *Libro {
 
 // ---------- MÉTODOS DE USUARIOS ----------
 
+// AgregarUsuario agrega un nuevo usuario y retorna su ID
 func (b *Biblioteca) AgregarUsuario(nombre string) int {
 	usuario := NewUsuario(nombre)
 	usuario.SetID(b.contadorUsuarios)
@@ -201,6 +296,7 @@ func (b *Biblioteca) AgregarUsuario(nombre string) int {
 	return usuario.GetID()
 }
 
+// ListarUsuarios muestra todos los usuarios registrados
 func (b *Biblioteca) ListarUsuarios() {
 	if len(b.usuarios) == 0 {
 		fmt.Println("No hay usuarios registrados")
@@ -213,6 +309,7 @@ func (b *Biblioteca) ListarUsuarios() {
 	}
 }
 
+// ObtenerUsuarioPorID retorna el usuario con el ID dado, o nil si no existe
 func (b *Biblioteca) ObtenerUsuarioPorID(id int) *Usuario {
 	for _, u := range b.usuarios {
 		if u.GetID() == id {
@@ -224,53 +321,59 @@ func (b *Biblioteca) ObtenerUsuarioPorID(id int) *Usuario {
 
 // ---------- MÉTODOS DE PRÉSTAMOS ----------
 
+// PrestarLibro permite a un usuario tomar prestado un libro (usando la interfaz Prestable)
 func (b *Biblioteca) PrestarLibro(usuarioID, libroID int) error {
 	usuario := b.ObtenerUsuarioPorID(usuarioID)
 	if usuario == nil {
-		return fmt.Errorf("usuario con ID %d no encontrado", usuarioID)
+		return ErrUsuarioNoEncontrado{ID: usuarioID}
 	}
 
 	libro := b.ObtenerLibroPorID(libroID)
 	if libro == nil {
-		return fmt.Errorf("libro con ID %d no encontrado", libroID)
+		return ErrLibroNoEncontrado{ID: libroID}
 	}
 
-	if libro.GetEstado() == "prestado" {
-		return fmt.Errorf("el libro '%s' ya está prestado", libro.GetTitulo())
+	// Usamos la interfaz Prestable
+	var p Prestable = libro
+	err := p.Prestar()
+	if err != nil {
+		return err
 	}
 
-	// Realizar préstamo
-	libro.SetEstado("prestado")
+	// Agregar el libro a la lista de préstamos del usuario
 	usuario.AgregarPrestamo(libroID)
 	return nil
 }
 
+// DevolverLibro permite a un usuario devolver un libro (usando la interfaz Prestable)
 func (b *Biblioteca) DevolverLibro(usuarioID, libroID int) error {
 	usuario := b.ObtenerUsuarioPorID(usuarioID)
 	if usuario == nil {
-		return fmt.Errorf("usuario con ID %d no encontrado", usuarioID)
+		return ErrUsuarioNoEncontrado{ID: usuarioID}
 	}
 
 	libro := b.ObtenerLibroPorID(libroID)
 	if libro == nil {
-		return fmt.Errorf("libro con ID %d no encontrado", libroID)
-	}
-
-	if libro.GetEstado() == "disponible" {
-		return fmt.Errorf("el libro '%s' no está prestado", libro.GetTitulo())
+		return ErrLibroNoEncontrado{ID: libroID}
 	}
 
 	// Verificar que el usuario tiene este libro prestado
 	if !usuario.RemoverPrestamo(libroID) {
-		return fmt.Errorf("el usuario no tiene prestado el libro con ID %d", libroID)
+		return ErrUsuarioNoTienePrestamo{UsuarioID: usuarioID, LibroID: libroID}
 	}
 
-	libro.SetEstado("disponible")
+	// Usamos la interfaz Prestable
+	var p Prestable = libro
+	err := p.Devolver()
+	if err != nil {
+		return err
+	}
+
 	return nil
 }
 
 // ============================================================
-// FUNCIÓN MAIN (MENÚ PRINCIPAL)
+// 6. FUNCIÓN MAIN (MENÚ PRINCIPAL)
 // ============================================================
 
 func main() {
@@ -288,8 +391,8 @@ func main() {
 		fmt.Println("5. Eliminar Libro")
 		fmt.Println("6. Agregar Usuario")
 		fmt.Println("7. Listar Usuarios")
-		fmt.Println("8. Prestar Libro")  // NUEVO
-		fmt.Println("9. Devolver Libro") // NUEVO
+		fmt.Println("8. Prestar Libro")
+		fmt.Println("9. Devolver Libro")
 		fmt.Println("10. Salir")
 		fmt.Print("Opción: ")
 
